@@ -1,0 +1,1672 @@
+openapi: 3.0.3
+info:
+  title: VitaNexus API
+  description: |
+    REST API for VitaNexus Health Assurance Cooperative.
+
+    Core API for member management, health scoring, financial operations,
+    and third-party integrations (wearables, EHR, claims processors).
+
+    **Security**: All endpoints require OAuth 2.0 authentication with JWT tokens.
+    PHI data is encrypted in transit (TLS 1.3) and at rest (AES-256).
+
+    **Rate Limiting**: 1000 requests/minute per API key for standard tier.
+
+    **HIPAA Compliance**: All PHI access is logged in audit trail.
+
+  version: 1.0.0
+  contact:
+    name: VitaNexus API Support
+    email: api-support@vitanexus.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.vitanexus.com/v1
+    description: Production server
+  - url: https://api-staging.vitanexus.com/v1
+    description: Staging server
+  - url: http://localhost:8000/v1
+    description: Local development
+
+security:
+  - OAuth2:
+      - read:members
+      - write:members
+      - read:health_data
+      - write:health_data
+      - read:financial
+      - write:financial
+
+tags:
+  - name: Members
+    description: Member enrollment and profile management
+  - name: Health Scoring
+    description: Health risk assessment and scoring
+  - name: Financial
+    description: Premium, claims, and rebate management
+  - name: Interventions
+    description: Prevention programs and recommendations
+  - name: Wearables
+    description: Integration with wearable devices
+  - name: Claims
+    description: Claims submission and processing
+  - name: Providers
+    description: Provider network management
+  - name: Analytics
+    description: Reporting and business intelligence
+
+paths:
+  # ============================================================================
+  # MEMBERS
+  # ============================================================================
+
+  /members:
+    post:
+      tags:
+        - Members
+      summary: Enroll new member
+      description: Create new member enrollment with demographic and health information
+      operationId: createMember
+      security:
+        - OAuth2:
+            - write:members
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberEnrollmentRequest'
+      responses:
+        '201':
+          description: Member created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    get:
+      tags:
+        - Members
+      summary: List members
+      description: Retrieve paginated list of members with optional filters
+      operationId: listMembers
+      security:
+        - OAuth2:
+            - read:members
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, suspended, terminated, pending]
+        - name: risk_category
+          in: query
+          schema:
+            type: string
+            enum: [low, moderate, high, critical]
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [enrollment_date, risk_score, last_name]
+            default: enrollment_date
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MemberSummary'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /members/{member_id}:
+    get:
+      tags:
+        - Members
+      summary: Get member details
+      operationId: getMember
+      security:
+        - OAuth2:
+            - read:members
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Members
+      summary: Update member information
+      operationId: updateMember
+      security:
+        - OAuth2:
+            - write:members
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdateRequest'
+      responses:
+        '200':
+          description: Member updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberResponse'
+
+  /members/{member_id}/health-profile:
+    get:
+      tags:
+        - Members
+      summary: Get member health profile
+      description: Retrieve biometric data, chronic conditions, medications, etc.
+      operationId: getMemberHealthProfile
+      security:
+        - OAuth2:
+            - read:health_data
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Health profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthProfile'
+
+    put:
+      tags:
+        - Members
+      summary: Update member health profile
+      operationId: updateHealthProfile
+      security:
+        - OAuth2:
+            - write:health_data
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HealthProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthProfile'
+
+  # ============================================================================
+  # HEALTH SCORING
+  # ============================================================================
+
+  /health-scores/{member_id}:
+    get:
+      tags:
+        - Health Scoring
+      summary: Get current health score
+      description: Retrieve most recent health risk score for member
+      operationId: getCurrentHealthScore
+      security:
+        - OAuth2:
+            - read:health_data
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Current health score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthScore'
+
+    post:
+      tags:
+        - Health Scoring
+      summary: Calculate health score
+      description: Trigger new health risk score calculation
+      operationId: calculateHealthScore
+      security:
+        - OAuth2:
+            - write:health_data
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Score calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthScore'
+        '202':
+          description: Calculation queued (async processing)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: "processing"
+                  estimated_completion:
+                    type: string
+                    format: date-time
+
+  /health-scores/{member_id}/history:
+    get:
+      tags:
+        - Health Scoring
+      summary: Get score history
+      description: Retrieve time-series of historical health scores
+      operationId: getHealthScoreHistory
+      security:
+        - OAuth2:
+            - read:health_data
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: interval
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: monthly
+      responses:
+        '200':
+          description: Score history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member_id:
+                    type: string
+                    format: uuid
+                  scores:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HealthScore'
+
+  # ============================================================================
+  # WEARABLE INTEGRATIONS
+  # ============================================================================
+
+  /wearables/connect:
+    post:
+      tags:
+        - Wearables
+      summary: Connect wearable device
+      description: Initiate OAuth flow to connect member's wearable device
+      operationId: connectWearable
+      security:
+        - OAuth2:
+            - write:health_data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - member_id
+                - device_type
+              properties:
+                member_id:
+                  type: string
+                  format: uuid
+                device_type:
+                  type: string
+                  enum: [fitbit, apple_health, garmin, whoop, oura]
+                callback_url:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: OAuth authorization URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorization_url:
+                    type: string
+                    format: uri
+                  state:
+                    type: string
+                    description: OAuth state parameter for verification
+
+  /wearables/callback:
+    post:
+      tags:
+        - Wearables
+      summary: OAuth callback handler
+      description: Handle OAuth callback from wearable provider
+      operationId: wearableOAuthCallback
+      security:
+        - OAuth2:
+            - write:health_data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - state
+              properties:
+                code:
+                  type: string
+                state:
+                  type: string
+      responses:
+        '200':
+          description: Connection established
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member_id:
+                    type: string
+                    format: uuid
+                  device_type:
+                    type: string
+                  connected:
+                    type: boolean
+                  last_sync:
+                    type: string
+                    format: date-time
+
+  /wearables/{member_id}/metrics:
+    post:
+      tags:
+        - Wearables
+      summary: Submit wearable metrics
+      description: Bulk upload of wearable data (typically called by sync service)
+      operationId: submitWearableMetrics
+      security:
+        - OAuth2:
+            - write:health_data
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - device_type
+                - metrics
+              properties:
+                device_type:
+                  type: string
+                metrics:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/WearableMetric'
+      responses:
+        '201':
+          description: Metrics ingested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records_ingested:
+                    type: integer
+                  records_rejected:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+
+    get:
+      tags:
+        - Wearables
+      summary: Get wearable metrics
+      description: Retrieve historical wearable data
+      operationId: getWearableMetrics
+      security:
+        - OAuth2:
+            - read:health_data
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: metric_types
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [steps, heart_rate, sleep, activity]
+      responses:
+        '200':
+          description: Wearable metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member_id:
+                    type: string
+                    format: uuid
+                  date_range:
+                    type: object
+                    properties:
+                      start:
+                        type: string
+                        format: date
+                      end:
+                        type: string
+                        format: date
+                  metrics:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WearableMetric'
+
+  # ============================================================================
+  # CLAIMS
+  # ============================================================================
+
+  /claims:
+    post:
+      tags:
+        - Claims
+      summary: Submit claim
+      description: Submit healthcare claim for processing
+      operationId: submitClaim
+      security:
+        - OAuth2:
+            - write:financial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimSubmission'
+      responses:
+        '201':
+          description: Claim submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+
+    get:
+      tags:
+        - Claims
+      summary: List claims
+      operationId: listClaims
+      security:
+        - OAuth2:
+            - read:financial
+      parameters:
+        - name: member_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [submitted, processing, approved, denied, appealed]
+        - name: service_date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: service_date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of claims
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClaimResponse'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /claims/{claim_id}:
+    get:
+      tags:
+        - Claims
+      summary: Get claim details
+      operationId: getClaim
+      security:
+        - OAuth2:
+            - read:financial
+      parameters:
+        - name: claim_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Claim details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+
+  # ============================================================================
+  # FINANCIAL
+  # ============================================================================
+
+  /financial/premiums/{member_id}:
+    get:
+      tags:
+        - Financial
+      summary: Get member premium information
+      operationId: getMemberPremiums
+      security:
+        - OAuth2:
+            - read:financial
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Premium information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PremiumInfo'
+
+  /financial/rebates/{member_id}:
+    get:
+      tags:
+        - Financial
+      summary: Get member rebate history
+      operationId: getMemberRebates
+      security:
+        - OAuth2:
+            - read:financial
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Rebate history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member_id:
+                    type: string
+                    format: uuid
+                  total_rebates_lifetime:
+                    type: number
+                    format: decimal
+                  rebates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RebateResponse'
+
+  /financial/cost-estimates:
+    post:
+      tags:
+        - Financial
+      summary: Estimate procedure cost
+      description: Provide cost estimate for planned medical procedure
+      operationId: estimateProcedureCost
+      security:
+        - OAuth2:
+            - read:financial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - member_id
+                - procedure_codes
+              properties:
+                member_id:
+                  type: string
+                  format: uuid
+                procedure_codes:
+                  type: array
+                  items:
+                    type: string
+                    description: CPT codes
+                provider_id:
+                  type: string
+                  format: uuid
+                facility_type:
+                  type: string
+                  enum: [office, outpatient, inpatient, emergency]
+      responses:
+        '200':
+          description: Cost estimate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostEstimate'
+
+  # ============================================================================
+  # INTERVENTIONS
+  # ============================================================================
+
+  /interventions/programs:
+    get:
+      tags:
+        - Interventions
+      summary: List available prevention programs
+      operationId: listPrograms
+      security:
+        - OAuth2:
+            - read:members
+      parameters:
+        - name: member_id
+          in: query
+          description: Filter programs by member eligibility
+          schema:
+            type: string
+            format: uuid
+        - name: program_type
+          in: query
+          schema:
+            type: string
+            enum:
+              - chronic_disease_management
+              - behavioral_coaching
+              - nutrition_counseling
+              - fitness_program
+              - smoking_cessation
+      responses:
+        '200':
+          description: List of programs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PreventionProgram'
+
+  /interventions/recommendations/{member_id}:
+    get:
+      tags:
+        - Interventions
+      summary: Get intervention recommendations
+      description: AI-generated recommendations for wellness interventions
+      operationId: getRecommendations
+      security:
+        - OAuth2:
+            - read:health_data
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Intervention recommendations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member_id:
+                    type: string
+                    format: uuid
+                  recommendations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InterventionRecommendation'
+
+  /interventions/enrollments:
+    post:
+      tags:
+        - Interventions
+      summary: Enroll member in program
+      operationId: enrollInProgram
+      security:
+        - OAuth2:
+            - write:members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - member_id
+                - program_id
+              properties:
+                member_id:
+                  type: string
+                  format: uuid
+                program_id:
+                  type: string
+                  format: uuid
+                scheduled_start_date:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Enrollment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramEnrollment'
+
+  # ============================================================================
+  # ANALYTICS
+  # ============================================================================
+
+  /analytics/risk-pool:
+    get:
+      tags:
+        - Analytics
+      summary: Get risk pool metrics
+      description: Aggregate financial and health metrics for risk pool
+      operationId: getRiskPoolMetrics
+      security:
+        - OAuth2:
+            - read:financial
+      parameters:
+        - name: as_of_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Risk pool metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskPoolMetrics'
+
+  /analytics/financial-forecast:
+    post:
+      tags:
+        - Analytics
+      summary: Generate financial forecast
+      description: P&L projection for specified period
+      operationId: generateForecast
+      security:
+        - OAuth2:
+            - read:financial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - months_forward
+              properties:
+                months_forward:
+                  type: integer
+                  minimum: 1
+                  maximum: 24
+                scenario:
+                  type: string
+                  enum: [conservative, baseline, optimistic]
+                  default: baseline
+      responses:
+        '200':
+          description: Financial forecast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialForecast'
+
+# ============================================================================
+# COMPONENTS
+# ============================================================================
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.vitanexus.com/oauth/authorize
+          tokenUrl: https://auth.vitanexus.com/oauth/token
+          scopes:
+            read:members: Read member information
+            write:members: Create and update members
+            read:health_data: Read health data including PHI
+            write:health_data: Write health data
+            read:financial: Read financial data
+            write:financial: Submit claims and process payments
+
+  schemas:
+    MemberEnrollmentRequest:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - date_of_birth
+        - email
+        - enrollment_date
+      properties:
+        external_member_id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [M, F, O]
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        enrollment_date:
+          type: string
+          format: date
+        monthly_premium:
+          type: number
+          format: decimal
+        initial_health_data:
+          $ref: '#/components/schemas/HealthProfileUpdate'
+
+    MemberResponse:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        external_member_id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        age:
+          type: integer
+        gender:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        enrollment_date:
+          type: string
+          format: date
+        status:
+          type: string
+        current_risk_score:
+          type: number
+          format: decimal
+        current_risk_category:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MemberSummary:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        age:
+          type: integer
+        risk_score:
+          type: number
+        risk_category:
+          type: string
+        enrollment_date:
+          type: string
+          format: date
+        status:
+          type: string
+
+    MemberUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        status:
+          type: string
+          enum: [active, suspended, terminated]
+
+    Address:
+      type: object
+      properties:
+        line1:
+          type: string
+        line2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
+        zip_code:
+          type: string
+        country:
+          type: string
+          default: USA
+
+    HealthProfile:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        biometrics:
+          type: object
+          properties:
+            height_cm:
+              type: number
+            weight_kg:
+              type: number
+            bmi:
+              type: number
+            blood_pressure_systolic:
+              type: integer
+            blood_pressure_diastolic:
+              type: integer
+            resting_heart_rate:
+              type: integer
+        lab_results:
+          type: object
+          properties:
+            glucose_level:
+              type: integer
+            cholesterol_total:
+              type: integer
+            cholesterol_hdl:
+              type: integer
+            cholesterol_ldl:
+              type: integer
+            hba1c:
+              type: number
+        chronic_conditions:
+          type: array
+          items:
+            type: object
+            properties:
+              icd10_code:
+                type: string
+              condition_name:
+                type: string
+              diagnosis_date:
+                type: string
+                format: date
+              severity:
+                type: string
+        medications:
+          type: array
+          items:
+            type: object
+            properties:
+              drug_name:
+                type: string
+              dosage:
+                type: string
+              frequency:
+                type: string
+              is_active:
+                type: boolean
+        behaviors:
+          type: object
+          properties:
+            smoker:
+              type: boolean
+            alcohol_use:
+              type: string
+            exercise_frequency:
+              type: string
+        last_updated:
+          type: string
+          format: date-time
+
+    HealthProfileUpdate:
+      type: object
+      properties:
+        biometrics:
+          type: object
+        lab_results:
+          type: object
+        behaviors:
+          type: object
+
+    HealthScore:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: decimal
+          minimum: 1
+          maximum: 100
+        risk_category:
+          type: string
+          enum: [low, moderate, high, critical]
+        confidence_level:
+          type: number
+          format: decimal
+        predicted_annual_cost:
+          type: number
+          format: decimal
+        cost_prediction_range:
+          type: object
+          properties:
+            low:
+              type: number
+            high:
+              type: number
+        component_scores:
+          type: object
+          properties:
+            demographic:
+              type: number
+            clinical:
+              type: number
+            behavioral:
+              type: number
+            utilization:
+              type: number
+        top_risk_factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor_name:
+                type: string
+              contribution_points:
+                type: number
+              severity:
+                type: string
+              recommended_action:
+                type: string
+        recommended_interventions:
+          type: array
+          items:
+            type: string
+        calculation_timestamp:
+          type: string
+          format: date-time
+        model_version:
+          type: string
+        data_completeness_score:
+          type: number
+
+    WearableMetric:
+      type: object
+      required:
+        - recorded_timestamp
+      properties:
+        recorded_timestamp:
+          type: string
+          format: date-time
+        device_type:
+          type: string
+        device_id:
+          type: string
+        steps:
+          type: integer
+        distance_meters:
+          type: integer
+        active_minutes:
+          type: integer
+        calories_burned:
+          type: integer
+        resting_heart_rate:
+          type: integer
+        avg_heart_rate:
+          type: integer
+        max_heart_rate:
+          type: integer
+        sleep_minutes:
+          type: integer
+        deep_sleep_minutes:
+          type: integer
+        rem_sleep_minutes:
+          type: integer
+        sleep_quality_score:
+          type: integer
+        spo2_percentage:
+          type: number
+
+    ClaimSubmission:
+      type: object
+      required:
+        - member_id
+        - claim_type
+        - service_date
+        - billed_amount
+        - primary_diagnosis_code
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        claim_type:
+          type: string
+          enum: [medical, pharmacy, dental, vision, mental_health]
+        service_date:
+          type: string
+          format: date
+        service_end_date:
+          type: string
+          format: date
+        provider_npi:
+          type: string
+        facility_name:
+          type: string
+        primary_diagnosis_code:
+          type: string
+        procedure_codes:
+          type: array
+          items:
+            type: string
+        place_of_service:
+          type: string
+        billed_amount:
+          type: number
+          format: decimal
+        supporting_documents:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    ClaimResponse:
+      type: object
+      properties:
+        claim_id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        claim_number:
+          type: string
+        claim_type:
+          type: string
+        service_date:
+          type: string
+          format: date
+        provider_name:
+          type: string
+        primary_diagnosis_code:
+          type: string
+        billed_amount:
+          type: number
+        allowed_amount:
+          type: number
+        paid_amount:
+          type: number
+        member_responsibility:
+          type: number
+        claim_status:
+          type: string
+        submission_date:
+          type: string
+          format: date
+        processed_date:
+          type: string
+          format: date
+        explanation:
+          type: string
+
+    PremiumInfo:
+      type: object
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        policy_number:
+          type: string
+        monthly_premium:
+          type: number
+        annual_deductible:
+          type: number
+        out_of_pocket_max:
+          type: number
+        deductible_met_ytd:
+          type: number
+        out_of_pocket_met_ytd:
+          type: number
+        next_payment_due:
+          type: string
+          format: date
+        payment_history:
+          type: array
+          items:
+            type: object
+            properties:
+              payment_date:
+                type: string
+                format: date
+              amount:
+                type: number
+              status:
+                type: string
+
+    RebateResponse:
+      type: object
+      properties:
+        rebate_id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        rebate_period:
+          type: string
+        calculation_date:
+          type: string
+          format: date
+        base_rebate_amount:
+          type: number
+        health_improvement_bonus:
+          type: number
+        participation_bonus:
+          type: number
+        total_rebate_amount:
+          type: number
+        distribution_date:
+          type: string
+          format: date
+        distribution_status:
+          type: string
+
+    CostEstimate:
+      type: object
+      properties:
+        procedure_codes:
+          type: array
+          items:
+            type: string
+        estimated_billed_amount:
+          type: number
+        estimated_allowed_amount:
+          type: number
+        estimated_member_cost:
+          type: number
+        breakdown:
+          type: object
+          properties:
+            deductible:
+              type: number
+            copay:
+              type: number
+            coinsurance:
+              type: number
+        network_alternatives:
+          type: array
+          items:
+            type: object
+            properties:
+              provider_name:
+                type: string
+              estimated_cost:
+                type: number
+              quality_score:
+                type: number
+
+    PreventionProgram:
+      type: object
+      properties:
+        program_id:
+          type: string
+          format: uuid
+        program_name:
+          type: string
+        program_type:
+          type: string
+        description:
+          type: string
+        duration_weeks:
+          type: integer
+        delivery_method:
+          type: string
+        cost_per_participant:
+          type: number
+        eligibility_criteria:
+          type: array
+          items:
+            type: string
+        expected_outcomes:
+          type: object
+          properties:
+            risk_reduction:
+              type: number
+            cost_avoidance:
+              type: number
+            completion_rate:
+              type: number
+
+    InterventionRecommendation:
+      type: object
+      properties:
+        recommendation_id:
+          type: string
+          format: uuid
+        program_id:
+          type: string
+          format: uuid
+        program_name:
+          type: string
+        priority_score:
+          type: number
+        expected_roi:
+          type: number
+        recommendation_reason:
+          type: string
+        status:
+          type: string
+
+    ProgramEnrollment:
+      type: object
+      properties:
+        enrollment_id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        program_id:
+          type: string
+          format: uuid
+        program_name:
+          type: string
+        enrollment_date:
+          type: string
+          format: date
+        scheduled_start_date:
+          type: string
+          format: date
+        enrollment_status:
+          type: string
+        progress:
+          type: object
+          properties:
+            sessions_attended:
+              type: integer
+            sessions_total:
+              type: integer
+            attendance_rate:
+              type: number
+
+    RiskPoolMetrics:
+      type: object
+      properties:
+        calculation_date:
+          type: string
+          format: date
+        total_members:
+          type: integer
+        total_monthly_premiums:
+          type: number
+        required_reserves:
+          type: number
+        risk_distribution:
+          type: object
+          properties:
+            low:
+              type: integer
+            moderate:
+              type: integer
+            high:
+              type: integer
+            critical:
+              type: integer
+        financial_performance:
+          type: object
+          properties:
+            total_claims_ytd:
+              type: number
+            total_interventions_ytd:
+              type: number
+            savings_ytd:
+              type: number
+            savings_percentage:
+              type: number
+            medical_loss_ratio:
+              type: number
+
+    FinancialForecast:
+      type: object
+      properties:
+        forecast_period:
+          type: string
+        scenario:
+          type: string
+        projected_premium_revenue:
+          type: number
+        projected_claims:
+          type: number
+        projected_interventions:
+          type: number
+        projected_operating_expenses:
+          type: number
+        projected_savings:
+          type: number
+        projected_company_profit:
+          type: number
+        projected_member_rebates:
+          type: number
+        key_ratios:
+          type: object
+          properties:
+            medical_loss_ratio:
+              type: number
+            intervention_ratio:
+              type: number
+            profit_margin:
+              type: number
+        confidence_interval:
+          type: object
+          properties:
+            low:
+              type: number
+            high:
+              type: number
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_records:
+          type: integer
+        total_pages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
