@@ -4,13 +4,25 @@
 
 ## 🚀 Quick Deploy
 
+### 🆓 Deploy 100% FREE (Recommended)
+**No credit card required!**
+
+```bash
+./deploy_render.sh
+```
+
+Or follow: [DEPLOY_FREE.md](DEPLOY_FREE.md) - Step-by-step Render deployment (FREE tier)
+
+### 💳 Deploy with Railway
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/vitanexus)
+
+See: [GITHUB_DEPLOY_INSTRUCTIONS.md](GITHUB_DEPLOY_INSTRUCTIONS.md)
+
+---
 
 **Live Demo**:
 - **Frontend**: https://frontend-fghqf36ya-somtonweke1s-projects.vercel.app
 - **GitHub**: https://github.com/somtonweke1/Vita
-
-**Full Deployment Guide**: See [GITHUB_DEPLOY_INSTRUCTIONS.md](GITHUB_DEPLOY_INSTRUCTIONS.md)
 
 ## Vision
 
