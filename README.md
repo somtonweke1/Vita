@@ -2,6 +2,16 @@
 
 > **Revolutionizing Healthcare**: Making money from wellness, not sickness.
 
+## 🚀 Quick Deploy
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/vitanexus)
+
+**Live Demo**:
+- **Frontend**: https://frontend-fghqf36ya-somtonweke1s-projects.vercel.app
+- **GitHub**: https://github.com/somtonweke1/Vita
+
+**Full Deployment Guide**: See [GITHUB_DEPLOY_INSTRUCTIONS.md](GITHUB_DEPLOY_INSTRUCTIONS.md)
+
 ## Vision
 
 VitaNexus aligns financial incentives with member health outcomes. Our business model succeeds when members stay healthy—creating a powerful economic driver for prevention and early intervention rather than reactive treatment.
