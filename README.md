@@ -23,7 +23,7 @@ See: [GITHUB_DEPLOY_INSTRUCTIONS.md](GITHUB_DEPLOY_INSTRUCTIONS.md)
 
 ## Vision
 
-VitaNexus aligns financial incentives with member health outcomes. Our business model succeeds when members stay healthy—creating a powerful economic driver for prevention and early intervention rather than reactive treatment.
+VitaNexus aligns financial incentives with member health outcomes. Our business model succeeds when members stay healthy creating a powerful economic driver for prevention and early intervention rather than reactive treatment.
 
 **The Paradox We Solve**: Traditional health insurance profits from denying claims and limiting care. VitaNexus profits from unused healthcare funds, incentivizing us to invest heavily in keeping you healthy.
 
