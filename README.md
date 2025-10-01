@@ -4,8 +4,6 @@
 
 ## 🚀 Quick Deploy
 
-### 🆓 Deploy 100% FREE (Recommended)
-**No credit card required!**
 
 ```bash
 ./deploy_render.sh
