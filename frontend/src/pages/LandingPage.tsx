@@ -11,7 +11,7 @@ export default function LandingPage() {
             <div className="flex items-center space-x-2">
               <Heart className="w-8 h-8 text-emerald-500" />
               <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-                VitaNexus
+                Vita
               </span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
@@ -25,7 +25,7 @@ export default function LandingPage() {
                 Pricing
               </a>
               <Link
-                to="/dashboard"
+                to="/login"
                 className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
               >
                 Member Login
@@ -174,7 +174,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-semibold text-slate-900 mb-4">
-              How VitaNexus Works
+              How Vita Works
             </h2>
             <p className="text-xl font-light text-slate-600">
               Three simple steps to better health and more savings
@@ -211,10 +211,10 @@ export default function LandingPage() {
             Ready to Transform Your Health?
           </h2>
           <p className="text-xl font-light opacity-90 mb-8 max-w-2xl mx-auto">
-            Join thousands of members who are taking control of their health and saving money with VitaNexus
+            Join thousands of members who are taking control of their health and saving money with Vita
           </p>
           <Link
-            to="/dashboard"
+            to="/login"
             className="inline-flex items-center space-x-2 bg-white text-emerald-600 px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
           >
             <span>Get Started Today</span>
@@ -233,7 +233,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Heart className="w-6 h-6 text-emerald-400" />
-                <span className="text-xl font-bold">VitaNexus</span>
+                <span className="text-xl font-bold">Vita</span>
               </div>
               <p className="text-sm text-slate-400 font-light">
                 Health Assurance Cooperative
@@ -265,7 +265,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-slate-800 mt-12 pt-8 text-center text-sm text-slate-400">
-            <p>&copy; 2025 VitaNexus Health Assurance Cooperative. All rights reserved.</p>
+            <p>&copy; 2025 Vita Health Assurance Cooperative. All rights reserved.</p>
           </div>
         </div>
       </footer>

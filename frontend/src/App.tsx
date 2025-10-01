@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Dashboard } from '@/pages/Dashboard';
 import LandingPage from '@/pages/LandingPage';
+import LoginPage from '@/pages/LoginPage';
 import '@/styles/globals.css';
 
 // Create a client
@@ -23,6 +24,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           {/* Additional routes would go here:
           <Route path="/health-profile" element={<HealthProfile />} />
