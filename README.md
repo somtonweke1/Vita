@@ -441,7 +441,6 @@ Unlike traditional insurance:
 
 ---
 
-## Why This "Bad Idea" Actually Works
 
 **The Conventional Wisdom**: "You can't make money from healthy people. Insurance works because most people don't get sick."
 
@@ -494,4 +493,4 @@ Proprietary. All rights reserved.
 
 ---
 
-**Built with the belief that healthcare should reward wellness, not sickness.**
+
