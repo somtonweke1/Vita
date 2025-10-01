@@ -22,3 +22,8 @@ httpx==0.28.1
 
 # Email validation
 email-validator==2.3.0
+
+# Analytics (needed by scoring_engine.py)
+numpy==2.3.3
+pandas==2.3.3
+scikit-learn==1.7.2
