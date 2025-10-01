@@ -2,7 +2,6 @@
 
 > **Revolutionizing Healthcare**: Making money from wellness, not sickness.
 
-## 🚀 Quick Deploy
 
 
 ```bash
