@@ -8,7 +8,6 @@ VitaNexus aligns financial incentives with member health outcomes. Our business 
 
 **The Paradox We Solve**: Traditional health insurance profits from denying claims and limiting care. VitaNexus profits from unused healthcare funds, incentivizing us to invest heavily in keeping you healthy.
 
----
 
 ## Business Model Innovation
 
@@ -35,7 +34,7 @@ VitaNexus aligns financial incentives with member health outcomes. Our business 
 - **Company ROI on Prevention**: 341% ($2,730 / $800)
 - **Member Wins**: Healthier + cash back
 
----
+
 
 ## Core Technology Components
 
@@ -125,7 +124,7 @@ Comprehensive regulatory compliance:
 
 Built for regulatory scrutiny from day one.
 
----
+
 
 ## System Architecture
 
@@ -182,7 +181,6 @@ Built for regulatory scrutiny from day one.
 - CDN for static content
 - Async processing via Kafka
 
----
 
 ## Key Metrics (Business Model Validation)
 
@@ -204,7 +202,7 @@ Built for regulatory scrutiny from day one.
 4. **ER Visit Reduction**: Target 40% reduction vs. baseline
 5. **Chronic Disease Control**: Target 80% meeting clinical targets
 
----
+
 
 ## MVP Roadmap
 
@@ -245,7 +243,7 @@ Built for regulatory scrutiny from day one.
 - [ ] HITRUST certification
 - [ ] Series A fundraising
 
----
+
 
 ## Tech Stack
 
@@ -481,7 +479,7 @@ For questions or partnership opportunities: founders@vitanexus.com
 
 Proprietary. All rights reserved.
 
-© 2025 VitaNexus Health Assurance Cooperative
+© 2025 VitaNexus Health 
 
 ---
 
